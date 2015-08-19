@@ -1,7 +1,7 @@
 <launch>
     <!--############### IMU Configurations ###################-->
     <!-- Node Settings -->
-    <arg name="output" default="screen"/>
+    <arg name="imu_output" default="screen"/>
     <arg name="imu" default="imu"/>
 
     <!-- IMU Settings -->
@@ -11,7 +11,7 @@
     <arg name="verbose" default="false"/>
 
     <!-- Frame ID for messages -->
-    <arg name="frame_id" default="$(arg imu)"/>
+    <arg name="imu_frame_id" default="$(arg imu)"/>
 
     <!-- Baudrate of serial comms (see manual for allowed values) -->
     <arg name="baudrate" default="115200"/>
@@ -32,8 +32,8 @@
     <arg name="rate" default="20"/>
 
     <!-- Camera Settings -->
-    <arg name="left" default="25000855"/>
-    <arg name="right" default="25001110"/>
+    <arg name="left" default="25001342"/>
+    <arg name="right" default="25001321"/>
     <arg name="left_camera_name" default="mv_$(arg left)"/>
     <arg name="right_camera_name" default="mv_$(arg right)"/>
     <arg name="left_calib_url"
@@ -42,7 +42,7 @@
         default="file://${ROS_HOME}/camera_info/$(arg right_camera_name).yaml"/>
 
     <arg name="camera" default="stereo"/>
-    <arg name="frame_id" default="$(arg camera)"/>
+    <arg name="stereo_frame_id" default="$(arg camera)"/>
     <arg name="fps" default="$(arg rate)"/>
     <arg name="color" default="false"/>
     <arg name="aec" default="0"/>
@@ -56,17 +56,17 @@
     <arg name="boost" default="false"/>
 
     <!-- Node Settings -->
-    <arg name="output" default="screen"/>
+    <arg name="stereo_output" default="screen"/>
     <arg name="proc" default="false"/>
     <arg name="view" default="false"/>
     <arg name="calib" default="false"/>
 
     <!--############### IMU Node ###################-->
-    <node pkg="imu_3dm_gx4" name="$(arg imu)" type="imu_3dm_gx4_single_node" output="$(arg output)">
+    <node pkg="imu_3dm_gx4" name="$(arg imu)" type="imu_3dm_gx4_single_node" output="$(arg imu_output)">
         <param name="device" type="string" value="$(arg device)" />
         <param name="verbose" type="bool" value="$(arg verbose)"/>
         <param name="baudrate" type="int" value="$(arg baudrate)" />
-        <param name="frame_id" type="string" value="$(arg frame_id)"/>
+        <param name="frame_id" type="string" value="$(arg imu_frame_id)"/>
         <param name="imu_rate" type="int" value="$(arg imu_rate)" />
         <param name="filter_rate" type="int" value="$(arg filter_rate)"/>
         <param name="enable_filter" type="bool" value="$(arg enable_filter)"/>
@@ -75,7 +75,7 @@
     </node>
 
     <!--############### Stereo Node ###################-->
-    <node pkg="bluefox2" type="stereo_node" name="$(arg camera)" output="$(arg output)">
+    <node pkg="bluefox2" type="stereo_node" name="$(arg camera)" output="$(arg stereo_output)">
         <param name="left/camera_name" type="string" value="$(arg left_camera_name)"/>
         <param name="left/identifier" type="string" value="$(arg left)"/>
         <param name="left/calib_url" type="string" value="$(arg left_calib_url)"/>
@@ -84,7 +84,7 @@
         <param name="right/identifier" type="string" value="$(arg right)"/>
         <param name="right/calib_url" type="string" value="$(arg right_calib_url)"/>
 
-        <param name="frame_id" type="string" value="$(arg frame_id)"/>
+        <param name="frame_id" type="string" value="$(arg stereo_frame_id)"/>
         <param name="fps" type="double" value="$(arg fps)"/>
         <param name="color" type="bool" value="$(arg color)"/>
         <param name="aec" type="int" value="$(arg aec)"/>
