@@ -18,13 +18,15 @@
 #ifndef CAM_IMU_SYNC
 #define CAM_IMU_SYNC
 
+#include <vector>
+
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <ros/ros.h>
 #include <imu_vn_100/imu_ros_base.h>
+#include <bluefox2/bluefox2_ros.h>
 // TODO: include the header files for the camera driver
-
 
 namespace cam_imu_sync {
 
@@ -37,43 +39,44 @@ namespace cam_imu_sync {
  * @author Ke Sun
  */
 class CamImuSynchronizer {
-  public:
-    CamImuSynchronizer(const ros::NodeHandle& n);
-    ~CamImuSynchronizer();
+ public:
+  CamImuSynchronizer(const ros::NodeHandle& n);
+  ~CamImuSynchronizer();
 
-    /**
-     * @brief initialize Initialize IMU and CAM objects
-     * @return True If the driver is initialized successfully.
-     */
-    bool initialize();
+  /**
+   * @brief initialize Initialize IMU and CAM objects
+   * @return True If the driver is initialized successfully.
+   */
+  bool initialize();
 
-    /**
-     * @brief start Starts the driver(IMU and CAM(s))
-     */
-    void start();
+  /**
+   * @brief start Starts the driver(IMU and CAM(s))
+   */
+  void start();
 
-  private:
-    // IMU object
-    imu_vn_100::ImuRosBase imu;
+ private:
+  // IMU object
+  imu_vn_100::ImuRosBase imu;
 
-    // TODO: Camera object(s)
+  // TODO: Camera object(s)
+  bluefox2::Bluefox2Ros lcam;
+  bluefox2::Bluefox2Ros rcam;
 
-    // Ros node
-    ros::NodeHandle nh;
+  // Ros node
+  ros::NodeHandle nh;
 
-    // A seperate thread waiting for images
-    boost::shared_ptr<boost::thread> img_poll_thread_ptr;
+  // A seperate thread waiting for images
+  boost::shared_ptr<boost::thread> img_poll_thread_ptr;
 
-    // Poll image(s) from camera(s)
-    //    This function will be run on a seperate thread
-    //    avoid blocking the main function.
-    void pollImage();
+  // Poll image(s) from camera(s)
+  //    This function will be run on a seperate thread
+  //    avoid blocking the main function.
+  void pollImage();
 
-    // Disable copy and assign contructor
-    CamImuSynchronizer(const CamImuSynchronizer&);
-    CamImuSynchronizer& operator=(const CamImuSynchronizer&);
+  // Disable copy and assign contructor
+  CamImuSynchronizer(const CamImuSynchronizer&);
+  CamImuSynchronizer& operator=(const CamImuSynchronizer&);
 };
-
 }
 
 #endif
