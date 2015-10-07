@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <camera_imu_sync/CamImuSynchronizer.h>
+#include <cam_imu_sync/CamImuSynchronizer.h>
 #include <bluefox2/Bluefox2DynConfig.h>
 
 namespace cam_imu_sync {
