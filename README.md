@@ -1,2 +1,2 @@
-# camera_imu_sync
-Software synchronization between bluefox2 cameras and 3dm_gx4_25 IMU
+# cam_imu_sync
+Synchronization driver for bluefox2 cameras and VN100 IMU
