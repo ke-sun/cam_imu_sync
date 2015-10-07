@@ -51,6 +51,9 @@ void CamImuSynchronizer::start() {
 }
 
 void CamImuSynchronizer::pollImage() {
+  // TODO: continuously poll images and
+  //    assign the latest time stamp from
+  //    IMU to the image msgs
   while (true) {
     // bool new_flag = cam.getImage()
     // if (new_flag) {
