@@ -62,6 +62,8 @@ void CamImuSynchronizer::pollImage() {
   ros::Rate r(10);
   while (ros::ok()) {
     ros::Time new_time_stamp = imu.getSyncTime();
+    lcam.RequestSingle();
+    rcam.RequestSingle();
     lcam.PublishCamera(new_time_stamp);
     rcam.PublishCamera(new_time_stamp);
     r.sleep();
