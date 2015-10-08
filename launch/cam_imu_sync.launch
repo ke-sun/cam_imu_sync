@@ -21,7 +21,8 @@
     <!-- Sync out settings -->
     <arg name="enable_sync_out" default = "true"/>
     <arg name="sync_out_rate" default = "$(arg sync_rate)"/>
-    <arg name="sync_out_pulse_width" default = "1000000"/>
+    <!-- The unit of pulse width is nano sec(ns) -->
+    <arg name="sync_out_pulse_width" default = "10000"/>
 
     <!-- Ros Topic settings -->
     <arg name="enable_magnetic_field" default="true"/>
