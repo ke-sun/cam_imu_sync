@@ -57,7 +57,8 @@ void CamImuSynchronizer::pollImage() {
   // TODO: continuously poll images and
   //    assign the latest time stamp from
   //    IMU to the image msgs
-  ros::Rate r(10);
+  float sync_rate = imu.getSyncRate();
+  ros::Rate r(static_cast<int>(sync_rate)+1);
   while (ros::ok()) {
     ros::Time new_time_stamp = imu.getSyncTime();
     lcam.RequestSingle();
