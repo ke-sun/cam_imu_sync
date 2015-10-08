@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<package>
-  <name>camera_imu_sync</name>
+<package format="2">
+  <name>cam_imu_sync</name>
   <version>0.0.1</version>
   <description>Sync the cameras and IMU</description>
   <maintainer email="sunke.polyu@gmail.com">ke</maintainer>
@@ -11,13 +11,9 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>camera_base</build_depend>
-  <build_depend>bluefox2</build_depend>
-  <build_depend>imu_3dm_gx4</build_depend>
-  <build_depend>roscpp</build_depend>
-
-  <run_depend>bluefox2</run_depend>
-  <run_depend>imu_3dm_gx4</run_depend>
-  <run_depend>roscpp</run_depend>
+  <depend>camera_base</depend>
+  <depend>bluefox2</depend>
+  <depend>imu_vn_100</depend>
+  <depend>roscpp</depend>
 
 </package>

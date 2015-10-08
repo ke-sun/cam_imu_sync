@@ -1,38 +1,52 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(camera_imu_sync)
+project(cam_imu_sync)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(catkin REQUIRED COMPONENTS
   camera_base
   bluefox2
-  imu_3dm_gx4
+  imu_vn_100
   roscpp
 )
 
 find_package(Boost REQUIRED)
+find_package(mvIMPACT REQUIRED)
 
-catkin_package()
+catkin_package(
+  INCLUDE_DIRS
+  LIBRARIES
+  CATKIN_DEPENDS
+  DEPENDS boost
+)
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${mvIMPACT_INCLUDE_DIRS}
 )
 link_directories(
   ${catkin_LIBRARY_DIRS}
   ${Boost_LIBRARY_DIRS}
 )
 
-add_definitions("-std=c++0x -Wall")
-
-
-add_executable(stereo_imu_sync_node
-  src/stereo_imu_sync_node.cpp
+add_library(cam_imu_sync
+  src/CamImuSynchronizer.cpp
+)
+target_link_libraries(cam_imu_sync
+  ${catkin_LIBRARIES}
+)
+add_dependencies(cam_imu_sync
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
 )
 
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-# add_dependencies(camera_imu_sync_node camera_imu_sync_generate_messages_cpp)
-
- target_link_libraries(stereo_imu_sync_node
-   ${catkin_LIBRARIES}
- )
+add_executable(cam_imu_sync_node
+  src/cam_imu_sync_node.cpp
+)
+target_link_libraries(cam_imu_sync_node
+  cam_imu_sync
+  ${catkin_LIBRARIES}
+)

@@ -20,7 +20,7 @@
 
 namespace cam_imu_sync {
 
-CamImuSynchronizer::CamImuSynchronizer(const ros::Nodehandle& n)
+CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& n)
     : nh(n),
       imu(n),
       lcam(n, "left"),
@@ -49,9 +49,10 @@ bool CamImuSynchronizer::initialize() {
 
 void CamImuSynchronizer::start() {
   // Start the IMU streaming
-  imu.enableIMUStream();
+  imu.enableIMUStream(true);
   // Start polling images from the camera(s)
-  img_poll_thread_ptr = new boost::thread(&CamImuSynchronizer::pollImage, this);
+  img_poll_thread_ptr = boost::shared_ptr<boost::thread>(
+      new boost::thread(&CamImuSynchronizer::pollImage, this));
   return;
 }
 

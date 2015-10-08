@@ -41,7 +41,7 @@ namespace cam_imu_sync {
 class CamImuSynchronizer {
  public:
   CamImuSynchronizer(const ros::NodeHandle& n);
-  ~CamImuSynchronizer();
+  ~CamImuSynchronizer() {}
 
   /**
    * @brief initialize Initialize IMU and CAM objects
@@ -55,15 +55,15 @@ class CamImuSynchronizer {
   void start();
 
  private:
+  // Ros node
+  ros::NodeHandle nh;
+
   // IMU object
   imu_vn_100::ImuRosBase imu;
 
   // TODO: Camera object(s)
   bluefox2::Bluefox2Ros lcam;
   bluefox2::Bluefox2Ros rcam;
-
-  // Ros node
-  ros::NodeHandle nh;
 
   // A seperate thread waiting for images
   boost::shared_ptr<boost::thread> img_poll_thread_ptr;
