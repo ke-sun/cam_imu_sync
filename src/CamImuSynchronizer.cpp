@@ -21,11 +21,7 @@
 namespace cam_imu_sync {
 
 CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& n)
-    : nh(n),
-      imu(n),
-      lcam(n, "left"),
-      rcam(n, "right")
-// TODO: pass the ros node handle to camera objects
+    : nh(n), imu(n), lcam(n, "left")//, rcam(n, "right")
 {
   return;
 }
@@ -42,7 +38,8 @@ bool CamImuSynchronizer::initialize() {
   cam_config.expose_us = 2000;
   cam_config.ctm = 3;
   lcam.camera().Configure(cam_config);
-  rcam.camera().Configure(cam_config);
+  lcam.set_fps(40);
+  //rcam.camera().Configure(cam_config);
 
   return true;
 }
@@ -64,9 +61,9 @@ void CamImuSynchronizer::pollImage() {
   while (ros::ok()) {
     ros::Time new_time_stamp = imu.getSyncTime();
     lcam.RequestSingle();
-    rcam.RequestSingle();
+    //rcam.RequestSingle();
     lcam.PublishCamera(new_time_stamp);
-    rcam.PublishCamera(new_time_stamp);
+    //rcam.PublishCamera(new_time_stamp);
     r.sleep();
   }
   return;

@@ -3,6 +3,7 @@
     <!--############### Node Configurations ##################-->
     <arg name="output" default="screen"/>
     <arg name="node_name" default="sync"/>
+    <arg name="sync_rate" default="40"/>
 
     <!--############### IMU Configurations ###################-->
     <!-- Connection -->
@@ -19,7 +20,7 @@
 
     <!-- Sync out settings -->
     <arg name="enable_sync_out" default = "true"/>
-    <arg name="sync_out_rate" default = "40"/>
+    <arg name="sync_out_rate" default = "$(arg sync_rate)"/>
     <arg name="sync_out_pulse_width" default = "1000000"/>
 
     <!-- Ros Topic settings -->
@@ -29,10 +30,10 @@
 
     <!--############### Camera Configurations ###################-->
     <!-- Common Interface -->
-    <arg name="frame_rate" default="20"/>
+    <arg name="frame_rate" default="$(arg sync_rate)"/>
 
     <!-- Camera Settings -->
-    <arg name="left" default="25001342"/>
+    <arg name="left" default="25000855"/>
     <arg name="right" default="25001321"/>
     <arg name="left_camera_name" default="mv_$(arg left)"/>
     <arg name="right_camera_name" default="mv_$(arg right)"/>

@@ -26,7 +26,6 @@
 #include <ros/ros.h>
 #include <imu_vn_100/imu_ros_base.h>
 #include <bluefox2/bluefox2_ros.h>
-// TODO: include the header files for the camera driver
 
 namespace cam_imu_sync {
 
@@ -61,9 +60,9 @@ class CamImuSynchronizer {
   // IMU object
   imu_vn_100::ImuRosBase imu;
 
-  // TODO: Camera object(s)
+  // Camera object(s)
   bluefox2::Bluefox2Ros lcam;
-  bluefox2::Bluefox2Ros rcam;
+  //bluefox2::Bluefox2Ros rcam;
 
   // A seperate thread waiting for images
   boost::shared_ptr<boost::thread> img_poll_thread_ptr;
