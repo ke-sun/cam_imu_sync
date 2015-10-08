@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cam_imu_sync)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(catkin REQUIRED COMPONENTS
   camera_base
@@ -12,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Boost REQUIRED)
-find_package(mvIMPACT REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS
@@ -25,7 +23,6 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
-  ${mvIMPACT_INCLUDE_DIRS}
 )
 link_directories(
   ${catkin_LIBRARY_DIRS}
