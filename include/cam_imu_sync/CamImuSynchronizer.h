@@ -62,7 +62,7 @@ class CamImuSynchronizer {
 
   // Camera object(s)
   bluefox2::Bluefox2Ros lcam;
-  //bluefox2::Bluefox2Ros rcam;
+  bluefox2::Bluefox2Ros rcam;
 
   // A seperate thread waiting for images
   boost::shared_ptr<boost::thread> img_poll_thread_ptr;

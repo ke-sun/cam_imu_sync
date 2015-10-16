@@ -21,7 +21,7 @@
 namespace cam_imu_sync {
 
 CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& n)
-    : nh(n), imu(n), lcam(n, "left")//, rcam(n, "right")
+    : nh(n), imu(n), lcam(n, "left"), rcam(n, "right")
 {
   return;
 }
@@ -33,13 +33,17 @@ bool CamImuSynchronizer::initialize() {
     return false;
   }
   // Initialize cameras
+  int cam_expose_us = 5000;
+  nh.param<int>("expose_us", cam_expose_us, 5000);
+
   bluefox2::Bluefox2DynConfig cam_config;
   cam_config.aec = 0;
-  cam_config.expose_us = 2000;
+  cam_config.expose_us = cam_expose_us;
   cam_config.ctm = 3;
   lcam.camera().Configure(cam_config);
   lcam.set_fps(40);
-  //rcam.camera().Configure(cam_config);
+  rcam.camera().Configure(cam_config);
+  rcam.set_fps(40);
 
   return true;
 }
@@ -66,9 +70,9 @@ void CamImuSynchronizer::pollImage() {
     ros::Time new_time_stamp =
       imu.getSyncTime() + ros::Duration(sync_duration);
     lcam.RequestSingle();
-    //rcam.RequestSingle();
+    rcam.RequestSingle();
     lcam.PublishCamera(new_time_stamp);
-    //rcam.PublishCamera(new_time_stamp);
+    rcam.PublishCamera(new_time_stamp);
     r.sleep();
   }
   return;
