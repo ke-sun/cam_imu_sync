@@ -25,7 +25,10 @@
 #include <rosbag/view.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
-#include <geometry_msgs/Twist.h>
+
+#include <vision_utils/VisionUtils.h>
+#include <feature_detector/ShiFeatureDetector.h>
+#include <feature_tracker/KltFeatureTracker.h>
 
 using namespace std;
 
@@ -47,17 +50,17 @@ int main(int argc, char **argv) {
   string imu_angular_vel_topic = "/sync/imu_imu";
   string cam_angular_vel_topic = "/sync/cam_imu";
 
-  vector<geometry_msgs::Twist> imu_imu(0);
-  vector<geometry_msgs::Twist> cam_imu(0);
+  vector<sensor_msgs::Imu> imu_imu(0);
+  vector<sensor_msgs::Imu> cam_imu(0);
 
   // Open the bagfiles
   rosbag::Bag read_bag(read_bagname, rosbag::bagmode::Read);
-  rosbag::View view(bag, rosbag::TopicQuery(topics));
+  rosbag::View view(read_bag, rosbag::TopicQuery(topics));
 
   // Loop through the recorded msgs
   BOOST_FOREACH(rosbag::MessageInstance const m, view) {
     if (!m.getTopic().compare(imu_topic)) {
-      sensor_msg::Imu::ConstPtr mptr =
+      sensor_msgs::Imu::ConstPtr mptr =
         m.instantiate<sensor_msgs::Imu>();
 
       if (mptr != NULL) {
@@ -65,13 +68,13 @@ int main(int argc, char **argv) {
       }
 
     } else if (!m.getTopic().compare(left_img_topic)) {
-      sensor_msg::Image::ConstPtr mptr =
+      sensor_msgs::Image::ConstPtr mptr =
         m.instantiate<sensor_msgs::Image>();
 
       // TODO: process the left images
 
     } else if (!m.getTopic().compare(right_img_topic)) {
-      sensor_msg::Image::ConstPtr mptr =
+      sensor_msgs::Image::ConstPtr mptr =
         m.instantiate<sensor_msgs::Image>();
 
       // TODO: process the right images

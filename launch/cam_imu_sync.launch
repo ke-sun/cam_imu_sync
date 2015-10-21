@@ -3,7 +3,7 @@
     <!--############### Node Configurations ##################-->
     <arg name="output" default="screen"/>
     <arg name="node_name" default="sync"/>
-    <arg name="sync_rate" default="40"/>
+    <arg name="sync_rate" default="10"/>
 
     <!--############### IMU Configurations ###################-->
     <!-- Connection -->
@@ -16,7 +16,7 @@
     <arg name="baudrate" default="921600"/>
 
     <!-- Data rate in Hz -->
-    <arg name="imu_rate" default="200"/>
+    <arg name="imu_rate" default="100"/>
 
     <!-- Sync out settings -->
     <arg name="enable_sync_out" default = "true"/>
@@ -53,7 +53,7 @@
     <arg name="dcfm" default="0"/>
     <arg name="hdr" default="false"/>
     <arg name="wbp" default="-1"/>
-    <arg name="expose_us" default="5000"/>
+    <arg name="expose_us" default="10000"/>
     <arg name="gain_db" default="0.0"/>
     <arg name="boost" default="false"/>
 

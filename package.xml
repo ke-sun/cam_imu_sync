@@ -15,5 +15,9 @@
   <depend>bluefox2</depend>
   <depend>imu_vn_100</depend>
   <depend>roscpp</depend>
+  <depend>rosbag</depend>
+  <depend>feature_detector</depend>
+  <depend>feature_tracker</depend>
+  <depend>vision_utils</depend>
 
 </package>

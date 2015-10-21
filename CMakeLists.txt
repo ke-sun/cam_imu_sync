@@ -8,6 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
   bluefox2
   imu_vn_100
   roscpp
+  rosbag
+  feature_detector
+  feature_tracker
+  vision_utils
 )
 
 find_package(Boost REQUIRED)
@@ -45,5 +49,12 @@ add_executable(cam_imu_sync_node
 )
 target_link_libraries(cam_imu_sync_node
   cam_imu_sync
+  ${catkin_LIBRARIES}
+)
+
+add_executable(sync_test_node
+  src/sync_verification.cpp
+)
+target_link_libraries(sync_test_node
   ${catkin_LIBRARIES}
 )
