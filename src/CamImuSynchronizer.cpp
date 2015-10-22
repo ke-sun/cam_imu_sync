@@ -41,9 +41,9 @@ bool CamImuSynchronizer::initialize() {
   cam_config.expose_us = cam_expose_us;
   cam_config.ctm = 3;
   lcam.camera().Configure(cam_config);
-  lcam.set_fps(40);
+  lcam.set_fps(static_cast<int>(imu.getSyncRate()));
   rcam.camera().Configure(cam_config);
-  rcam.set_fps(40);
+  rcam.set_fps(static_cast<int>(imu.getSyncRate()));
 
   return true;
 }
