@@ -16,6 +16,9 @@
   <depend>imu_vn_100</depend>
   <depend>roscpp</depend>
   <depend>rosbag</depend>
+  <depend>cv_bridge</depend>
+  <depend>eigen_conversions</depend>
+  <depend>sensor_msgs</depend>
   <depend>feature_detector</depend>
   <depend>feature_tracker</depend>
   <depend>vision_utils</depend>
