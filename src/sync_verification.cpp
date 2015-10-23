@@ -1,6 +1,5 @@
 /*
- * Copyright [2015] [Ke Sun  sunke.polyu@gmail.com]
- *                  [Chao Qu quchao@seas.upenn.edu]
+ * Copyright [2015] [Ke Sun sunke.polyu@gmail.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +17,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include <boost/foreach.hpp>
 #include <Eigen/Core>
@@ -63,6 +63,28 @@ fd::ShiFeatureDetector f_detector;
 ft::KltFeatureTracker f_tracker;
 double ransac_th;
 double ransac_confidence;
+// Store the output data
+struct StampedAngularVelocity {
+  double time;
+  Eigen::Vector3d data;
+
+  StampedAngularVelocity():
+    time(0.0),
+    data(Eigen::Vector3d::Zero()) {
+    return;
+  }
+  StampedAngularVelocity(const double& t,
+      const Eigen::Vector3d& ang_vel):
+    time(t),
+    data(ang_vel) {
+    return;
+  }
+};
+std::vector<sensor_msgs::Imu> imu_imu(0);
+std::vector<sensor_msgs::Imu> cam_imu(0);
+std::vector<StampedAngularVelocity> imu_ang_vel(0);
+std::vector<StampedAngularVelocity> cam_ang_vel(0);
+
 
 
 bool loadParameters() {
@@ -128,6 +150,189 @@ bool loadParameters() {
     return false;
 
   return true;
+}
+
+void medianFilter() {
+  // The window of the median filter is hard-coded
+  // to be 5.
+  for (int i = 2; i < cam_imu.size()-2; ++i) {
+    std::vector<double> med_x_candidate(3);
+    std::vector<double> med_y_candidate(3);
+    std::vector<double> med_z_candidate(3);
+
+    med_x_candidate[0] = std::min(
+        cam_ang_vel[i-2].data(0), cam_ang_vel[i-1].data(0));
+    med_y_candidate[0] = std::min(
+        cam_ang_vel[i-2].data(1), cam_ang_vel[i-1].data(1));
+    med_z_candidate[0] = std::min(
+        cam_ang_vel[i-2].data(2), cam_ang_vel[i-1].data(2));
+
+    med_x_candidate[1] = std::min(
+        cam_ang_vel[i].data(0), cam_ang_vel[i+1].data(0));
+    med_y_candidate[1] = std::min(
+        cam_ang_vel[i].data(1), cam_ang_vel[i+1].data(1));
+    med_z_candidate[1] = std::min(
+        cam_ang_vel[i].data(2), cam_ang_vel[i+1].data(2));
+
+    med_x_candidate[2] = cam_ang_vel[i+2].data(0);
+    med_y_candidate[2] = cam_ang_vel[i+2].data(1);
+    med_z_candidate[2] = cam_ang_vel[i+2].data(2);
+
+    cam_ang_vel[i].data(0) = med_x_candidate[0];
+    cam_ang_vel[i].data(1) = med_y_candidate[0];
+    cam_ang_vel[i].data(2) = med_z_candidate[0];
+
+    for (int j = 1; j < 3; ++j) {
+      if (cam_ang_vel[i].data(0) > med_x_candidate[j])
+        cam_ang_vel[i].data(0) = med_x_candidate[j];
+      if (cam_ang_vel[i].data(1) > med_y_candidate[j])
+        cam_ang_vel[i].data(1) = med_y_candidate[j];
+      if (cam_ang_vel[i].data(2) > med_z_candidate[j])
+        cam_ang_vel[i].data(2) = med_z_candidate[j];
+    }
+  }
+  // TODO: Take care of the first two and last two samples
+  return;
+}
+
+void computeJacobian(Eigen::VectorXd& jacobian) {
+
+  // Resize the dimension of Jacobian if necessary
+  if (jacobian.rows()!= cam_ang_vel.size()*3)
+    jacobian.resize(cam_imu.size()*3);
+
+  for (int i = 1; i < cam_ang_vel.size()-1; ++i) {
+    // Using linear interpolation
+    double prev_dt = cam_ang_vel[i].time - cam_ang_vel[i-1].time;
+    double next_dt = cam_ang_vel[i+1].time - cam_ang_vel[i].time;
+
+    jacobian.segment<3>(3*i) =
+      (cam_ang_vel[i+1].data-cam_ang_vel[i-1].data)/(prev_dt+next_dt);
+  }
+
+  // Handle the first sample point
+  jacobian.segment<3>(0) =
+    (cam_ang_vel[1].data-cam_ang_vel[0].data)/
+    (cam_ang_vel[1].time-cam_ang_vel[0].time);
+
+  // Handle the last sample point
+  jacobian.segment<3>(cam_ang_vel.size()*3-3) =
+    (cam_ang_vel[cam_ang_vel.size()-1].data-cam_ang_vel[cam_ang_vel.size()-2].data)/
+    (cam_ang_vel[cam_ang_vel.size()-1].time-cam_ang_vel[cam_ang_vel.size()-2].time);
+  return;
+}
+
+void computeResidual(const double& time_shift,
+    Eigen::VectorXd& residual) {
+  // Resize the dimension of residual if necessary
+  if (residual.rows()!= cam_ang_vel.size()*3)
+    residual.resize(cam_imu.size()*3);
+
+  // Compute the residual at each time instance
+  // where angular velocity from camera is avaiable
+  for (int i = 0; i < cam_ang_vel.size(); ++i) {
+    int match_index = -1;
+    // Find the corresponding interval within the IMU data
+    // sequence for the current cam angular velocity
+    for (int j = 0; j < imu_imu.size(); ++i) {
+      if (imu_ang_vel[j].time > cam_ang_vel[i].time+time_shift) {
+        match_index = j;
+        break;
+      }
+    }
+
+    Eigen::Vector3d intp_imu_ang_vel;
+    double interval, epsilon;
+    // Compute the residual
+    if (match_index != 0 && match_index != -1) {
+      // Deal with the case when the data from camera
+      // is within an interval of IMU data
+      interval = imu_ang_vel[match_index].time-
+        imu_ang_vel[match_index-1].time;
+      epsilon = imu_ang_vel[match_index].time-
+        cam_ang_vel[i].time-time_shift;
+      intp_imu_ang_vel = imu_ang_vel[match_index].data -
+        (imu_ang_vel[match_index].data-
+         imu_ang_vel[match_index-1].data)*
+        (epsilon/interval);
+      residual.segment<3>(3*i) = intp_imu_ang_vel-cam_ang_vel[i].data;
+    } else if (match_index == 0) {
+      // Deal with the case when the data from camera
+      // is before the first IMU data
+      interval = imu_ang_vel[1].time-
+        imu_ang_vel[0].time;
+      epsilon = imu_ang_vel[0].time-
+        cam_ang_vel[i].time-time_shift;
+      intp_imu_ang_vel = imu_ang_vel[0].data -
+        (imu_ang_vel[1].data-imu_ang_vel[0].data)*
+        (epsilon/interval);
+      residual.segment<3>(0) = intp_imu_ang_vel-cam_ang_vel[i].data;
+    } else {
+      // Deal with the case when the data from camera
+      // is after the last IMU data
+      interval = imu_ang_vel[imu_ang_vel.size()-1].time-
+        imu_ang_vel[imu_ang_vel.size()-2].time;
+      epsilon = cam_ang_vel[i].time+time_shift -
+        imu_ang_vel[imu_ang_vel.size()-1].time;
+      intp_imu_ang_vel = imu_ang_vel[imu_ang_vel.size()-1].data +
+        (imu_ang_vel[imu_ang_vel.size()-1].data-
+         imu_ang_vel[imu_ang_vel.size()-2].data)*
+        (epsilon/interval);
+      residual.segment<3>(3*cam_ang_vel.size()-3) =
+        intp_imu_ang_vel-cam_ang_vel[i].data;
+    }
+  }
+  return;
+}
+
+void computeTimeDelay() {
+  double damping = 1e-5;
+
+  Eigen::VectorXd jacobian;
+  Eigen::VectorXd prev_residual;
+  Eigen::VectorXd curr_residual;
+
+  double prev_error = 0;
+  double curr_error = 0;
+
+  // Remove the outliers in the cam data
+  medianFilter();
+
+  computeResidual(0.0, curr_residual);
+  curr_error = curr_residual.squaredNorm();
+  prev_residual = curr_residual;
+  prev_error = curr_error;
+
+  for (int outer_cntr = 0; outer_cntr < 50; ++outer_cntr) {
+    computeJacobian(jacobian);
+    // Try compute the shift in time
+    for (int inner_cntr = 0; inner_cntr < 100; ++inner_cntr) {
+      Eigen::VectorXd time_shift_vec = (jacobian.transpose()*prev_residual) /
+        (jacobian.squaredNorm()*(1.0+damping));
+      double time_shift = time_shift_vec(0);
+      computeResidual(time_shift, curr_residual);
+      curr_error = curr_residual.squaredNorm();
+      // Check the current residual
+      if (curr_error >= prev_error) {
+        damping *= 5.0;
+        continue;
+      } else {
+        damping = damping/5.0 > 1e-5 ? damping/5.0 : 1e-5;
+        prev_error = curr_error;
+        prev_residual = curr_residual;
+        for (int i = 0; i < cam_ang_vel.size(); ++i) {
+          cam_ang_vel[i].time += time_shift;
+        }
+        break;
+      }
+    }
+  }
+
+  // Output the optimized time shift
+  ROS_INFO("Time Shift = %f",
+      cam_imu[0].header.stamp.toSec()-cam_ang_vel[0].time);
+
+  return;
 }
 
 void showImgs() {
@@ -215,11 +420,6 @@ bool computeAngularVelocity(
 
     // Update previous image
     prev_img_ptr = curr_img_ptr;
-    //ROS_INFO(" ");
-    //std::cout << "dt:\t" << dt << std::endl;
-    //std::cout << "dR:\n" << dR << std::endl;
-    //std::cout << "angle:\t" << angle << std::endl;
-    //std::cout << "axis:\t" << axis.transpose() << std::endl;
     return true;
   } else {
     // Set the first image
@@ -250,10 +450,6 @@ int main(int argc, char **argv) {
   topics.push_back(imu_topic);
   topics.push_back(img_topic);
 
-  // Store the output data
-  std::vector<sensor_msgs::Imu> imu_imu(0);
-  std::vector<sensor_msgs::Imu> cam_imu(0);
-
   // Open the bagfile to be read
   ROS_INFO("Loading bag file.");
   rosbag::Bag read_bag(read_bagname, rosbag::bagmode::Read);
@@ -268,6 +464,12 @@ int main(int argc, char **argv) {
 
       if (mptr != NULL) {
         imu_imu.push_back(*mptr);
+        imu_ang_vel.push_back(StampedAngularVelocity(
+              mptr->header.stamp.toSec(),
+              Eigen::Vector3d(
+                mptr->angular_velocity.x,
+                mptr->angular_velocity.y,
+                mptr->angular_velocity.z)));
       }
 
     } else if (!m.getTopic().compare(img_topic)) {
@@ -286,6 +488,8 @@ int main(int argc, char **argv) {
             ros::Duration(dt/2.0);
           tf::vectorEigenToMsg(ang_vel, new_imu.angular_velocity);
           cam_imu.push_back(new_imu);
+          cam_ang_vel.push_back(StampedAngularVelocity(
+                new_imu.header.stamp.toSec(), ang_vel));
         }
       }
 
@@ -295,19 +499,22 @@ int main(int argc, char **argv) {
   // Close the bag for reading
   read_bag.close();
 
-  // Write the results to a new bagfile
-  ROS_INFO("Write results into a new bagfile.");
-  rosbag::Bag write_bag(write_bagname, rosbag::bagmode::Write);
-  for (int i = 0; i < imu_imu.size(); ++i) {
-    write_bag.write(imu_angular_vel_topic,
-        imu_imu[i].header.stamp, imu_imu[i]);
-  }
-  for (int i = 0; i < cam_imu.size(); ++i) {
-    write_bag.write(cam_angular_vel_topic,
-        cam_imu[i].header.stamp, cam_imu[i]);
-  }
+  // Compute the time delay
+  computeTimeDelay();
 
-  write_bag.close();
+  // Write the results to a new bagfile
+  //ROS_INFO("Write results into a new bagfile.");
+  //rosbag::Bag write_bag(write_bagname, rosbag::bagmode::Write);
+  //for (int i = 0; i < imu_imu.size(); ++i) {
+  //  write_bag.write(imu_angular_vel_topic,
+  //      imu_imu[i].header.stamp, imu_imu[i]);
+  //}
+  //for (int i = 0; i < cam_imu.size(); ++i) {
+  //  write_bag.write(cam_angular_vel_topic,
+  //      cam_imu[i].header.stamp, cam_imu[i]);
+  //}
+
+  //write_bag.close();
 
   return 0;
 }
