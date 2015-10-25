@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef CAM_IMU_SYNC
-#define CAM_IMU_SYNC
+#ifndef CAMIMUSYNC_CAMIMUSYNCHRONIZER_H
+#define CAMIMUSYNC_CAMIMUSYNCHRONIZER_H
 
 #include <vector>
 
@@ -24,8 +24,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include <ros/ros.h>
-#include <imu_vn_100/imu_ros_base.h>
-#include <bluefox2/bluefox2_ros.h>
 
 namespace cam_imu_sync {
 
@@ -37,16 +35,23 @@ namespace cam_imu_sync {
  *        are supposed to be externally triggered by the imu.
  * @author Ke Sun
  */
+template <typename Imu, typename Cam, typename CamConfig>
 class CamImuSynchronizer {
  public:
-  CamImuSynchronizer(const ros::NodeHandle& n);
-  ~CamImuSynchronizer() {}
+  CamImuSynchronizer(const ros::NodeHandle& pnh, int num_cameras = 2);
+  ~CamImuSynchronizer() = default;
+  CamImuSynchronizer(const CamImuSynchronizer&) = delete;
+  CamImuSynchronizer& operator=(const CamImuSynchronizer&) = delete;
+
+  using CamPtr = boost::shared_ptr<Cam>;
 
   /**
    * @brief initialize Initialize IMU and CAM objects
    * @return True If the driver is initialized successfully.
    */
-  bool initialize();
+  virtual void configure() = 0;
+
+  void configureEachCamera(CamConfig& config);
 
   /**
    * @brief start Starts the driver(IMU and CAM(s))
@@ -55,27 +60,75 @@ class CamImuSynchronizer {
 
  private:
   // Ros node
-  ros::NodeHandle nh;
+  ros::NodeHandle pnh_;
 
   // IMU object
-  imu_vn_100::ImuRosBase imu;
+  Imu imu_;
 
   // Camera object(s)
-  bluefox2::Bluefox2Ros lcam;
-  bluefox2::Bluefox2Ros rcam;
+  std::vector<CamPtr> cameras_;
 
   // A seperate thread waiting for images
-  boost::shared_ptr<boost::thread> img_poll_thread_ptr;
+  boost::shared_ptr<boost::thread> img_poll_thread_;
 
   // Poll image(s) from camera(s)
   //    This function will be run on a seperate thread
   //    avoid blocking the main function.
   void pollImage();
-
-  // Disable copy and assign contructor
-  CamImuSynchronizer(const CamImuSynchronizer&);
-  CamImuSynchronizer& operator=(const CamImuSynchronizer&);
 };
+
+template <typename Imu, typename Cam, typename CamConfig>
+CamImuSynchronizer<Imu, Cam, CamConfig>::CamImuSynchronizer(
+    const ros::NodeHandle& pnh, int num_cameras)
+    : pnh_(pnh), imu_(pnh) {
+  // TODO: Imu should establish class invariants in constructor
+  if (!imu_.initialize()) {
+    throw std::runtime_error("Failed to initialize imu");
+  }
+
+  for (int i = 0; i < num_cameras; ++i) {
+    const auto prefix = "cam" + std::to_string(i);
+    cameras_.push_back(boost::make_shared<Cam>(pnh, prefix));
+  }
 }
 
-#endif
+template <typename Imu, typename Cam, typename CamConfig>
+void CamImuSynchronizer<Imu, Cam, CamConfig>::start() {
+  // Start the IMU streaming
+  imu_.enableIMUStream(true);
+  // Start polling images from the camera(s)
+  img_poll_thread_.reset(new boost::thread(
+      &CamImuSynchronizer<Imu, Cam, CamConfig>::pollImage, this));
+}
+
+template <typename Imu, typename Cam, typename CamConfig>
+void CamImuSynchronizer<Imu, Cam, CamConfig>::pollImage() {
+  float sync_rate = imu_.getSyncRate();
+  float sync_duration = 1.0 / sync_rate;
+  ros::Rate r(sync_rate);
+
+  while (ros::ok()) {
+    const auto time = imu_.getSyncTime() + ros::Duration(sync_duration);
+    for (const auto& cam : cameras_) {
+      cam->RequestSingle();
+    }
+    for (auto& cam : cameras_) {
+      cam->PublishCamera(time);
+    }
+    r.sleep();
+  }
+}
+
+template <typename Imu, typename Cam, typename CamConfig>
+void CamImuSynchronizer<Imu, Cam, CamConfig>::configureEachCamera(
+    CamConfig& config) {
+  for (auto& cam : cameras_) {
+    // TODO: this is bad interface, maybe fix it
+    std::cout << "here" << std::endl;
+    cam->camera().Configure(config);
+  }
+}
+
+}  // namespace cam_imu_sync
+
+#endif  // CAM_IMU_SYNC_CAMIMUSYNCHRONIZER_H

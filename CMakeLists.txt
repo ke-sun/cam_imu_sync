@@ -18,8 +18,7 @@ catkin_package(
   INCLUDE_DIRS
   LIBRARIES
   CATKIN_DEPENDS
-  DEPENDS
-  boost
+  DEPENDS boost
 )
 
 include_directories(
@@ -27,14 +26,11 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
 )
-link_directories(
-  ${catkin_LIBRARY_DIRS}
-  ${Boost_LIBRARY_DIRS}
-)
 
 add_library(cam_imu_sync
-  src/CamImuSynchronizer.cpp
+  src/Bluefox2ImuSynchronizer.cpp
 )
+
 target_link_libraries(cam_imu_sync
   ${catkin_LIBRARIES}
 )
@@ -47,6 +43,6 @@ add_executable(cam_imu_sync_node
   src/cam_imu_sync_node.cpp
 )
 target_link_libraries(cam_imu_sync_node
-  cam_imu_sync
+  ${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
