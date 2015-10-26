@@ -58,7 +58,7 @@ class CamImuSynchronizer {
    */
   void start();
 
- private:
+ protected:
   // Ros node
   ros::NodeHandle pnh_;
 
@@ -124,7 +124,6 @@ void CamImuSynchronizer<Imu, Cam, CamConfig>::configureEachCamera(
     CamConfig& config) {
   for (auto& cam : cameras_) {
     // TODO: this is bad interface, maybe fix it
-    std::cout << "here" << std::endl;
     cam->camera().Configure(config);
   }
 }
