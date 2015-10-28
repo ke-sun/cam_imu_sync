@@ -2,7 +2,7 @@
 
     <!--############### Node Configurations ##################-->
     <arg name="output" default="screen"/>
-    <arg name="sync_rate" default="10"/>
+    <arg name="sync_rate" default="20"/>
 
     <!--############### IMU Configurations ###################-->
     <!-- Connection -->
@@ -15,13 +15,13 @@
     <arg name="baudrate" default="921600"/>
 
     <!-- Data rate in Hz -->
-    <arg name="imu_rate" default="100"/>
+    <arg name="imu_rate" default="200"/>
 
     <!-- Sync out settings -->
     <arg name="enable_sync_out" default="true"/>
     <arg name="sync_out_rate" default="$(arg sync_rate)"/>
     <!-- The unit of pulse width is nano sec(ns) -->
-    <arg name="sync_out_pulse_width" default="20000"/>
+    <arg name="sync_out_pulse_width" default="100000"/>
 
     <!-- Ros Topic settings -->
     <arg name="enable_magnetic_field" default="true"/>
@@ -33,8 +33,8 @@
     <arg name="frame_rate" default="$(arg sync_rate)"/>
 
     <!-- Camera Settings -->
-    <arg name="cam0" default="15322733"/>
-    <arg name="cam1" default="15322735"/>
+    <arg name="cam0" default="15322735"/>
+    <arg name="cam1" default="15322733"/>
 
     <!--############### Sync Node ###################-->
     <node pkg="cam_imu_sync" type="cam_imu_sync_node" name="chameleon3_imu_sync"
@@ -55,8 +55,8 @@
         <param name="cam0/camera_name" type="string" value="cam0"/>
         <param name="cam0/identifier" type="string" value="$(arg cam0)"/>
 
-        <param name="cam1/camera_name" type="string" value="cam1"/>
-        <param name="cam1/identifier" type="string" value="$(arg cam1)"/>
+        <!-- <param name="cam1/camera_name" type="string" value="cam1"/> -->
+        <!-- <param name="cam1/identifier" type="string" value="$(arg cam1)"/> -->
 
         <param name="fps" type="double" value="$(arg frame_rate)"/>
     </node>

@@ -22,7 +22,6 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
-  src/Bluefox2ImuSynchronizer.cpp
   src/Chameleon3ImuSynchronizer.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})

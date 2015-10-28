@@ -22,8 +22,10 @@
 
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
+#include <sensor_msgs/Image.h>
 
 #include <ros/ros.h>
+#include <cam_imu_sync/timer.hpp>
 
 namespace cam_imu_sync {
 
@@ -38,7 +40,7 @@ namespace cam_imu_sync {
 template <typename Imu, typename Cam, typename CamConfig>
 class CamImuSynchronizer {
  public:
-  CamImuSynchronizer(const ros::NodeHandle& pnh, int num_cameras = 2);
+  CamImuSynchronizer(const ros::NodeHandle& pnh, int num_cameras);
   ~CamImuSynchronizer() = default;
   CamImuSynchronizer(const CamImuSynchronizer&) = delete;
   CamImuSynchronizer& operator=(const CamImuSynchronizer&) = delete;
@@ -103,19 +105,31 @@ void CamImuSynchronizer<Imu, Cam, CamConfig>::start() {
 
 template <typename Imu, typename Cam, typename CamConfig>
 void CamImuSynchronizer<Imu, Cam, CamConfig>::pollImage() {
-  float sync_rate = imu_.getSyncRate();
-  float sync_duration = 1.0 / sync_rate;
-  ros::Rate r(sync_rate);
+  ros::Rate r(imu_.getSyncRate());
+  // Call Grab to clear buffer
+  for (auto& cam : cameras_) {
+    auto image_msg = boost::make_shared<sensor_msgs::Image>();
+    cam->Grab(image_msg);
+  }
+
+  kr::TimerUs timer_grab("grab", 10), timer_pub("pub", 10);
 
   while (ros::ok()) {
-    const auto time = imu_.getSyncTime() + ros::Duration(sync_duration);
     for (const auto& cam : cameras_) {
       cam->RequestSingle();
     }
-    for (auto& cam : cameras_) {
-      cam->PublishCamera(time);
+
+    ros::Time time;
+    for (size_t i = 0; i < cameras_.size(); ++i) {
+      auto image_msg = boost::make_shared<sensor_msgs::Image>();
+      cameras_[i]->Grab(image_msg);
+
+      if (i == 0) {
+        time = imu_.getSyncTime();  // + ros::Duration(sync_duration);
+      }
+      image_msg->header.stamp = time;
+      cameras_[i]->Publish(image_msg);
     }
-    r.sleep();
   }
 }
 

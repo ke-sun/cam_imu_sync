@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
   // New instance of the IMU
   // cam_imu_sync::Bluefox2ImuSynchronizer sync_driver(pnh, 2);
-  cam_imu_sync::Chameleon3ImuSynchronizer sync_driver(pnh, 2);
+  cam_imu_sync::Chameleon3ImuSynchronizer sync_driver(pnh, 1);
 
   // Start the driver
   sync_driver.configure();
