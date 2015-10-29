@@ -74,6 +74,8 @@ bool SyncVerifier::loadParameters() {
   cam_intrinsic.at<double>(0, 1) = skew;
   cam_intrinsic.at<double>(2, 2) = 1.0f;
 
+  cout << cam_intrinsic << endl;
+
   double roll, pitch, yaw;
   if (!nh.getParam("ic_offset_roll", roll))
     return false;
@@ -314,7 +316,7 @@ bool SyncVerifier::computeAngularVelocity(
   if (prev_img_ptr) {
     prev_features.clear();
     curr_features.clear();
-    vector<unsigned char> tracked_flags;
+    vector<unsigned char> tracked_flags(0);
     // Copy the current image
     curr_img_ptr = cv_bridge::toCvCopy(mptr,
         sensor_msgs::image_encodings::MONO8);
@@ -378,8 +380,10 @@ bool SyncVerifier::computeAngularVelocity(
     // Set the first image
     prev_img_ptr = cv_bridge::toCvCopy(mptr,
         sensor_msgs::image_encodings::MONO8);
-    imshow("Tracking Results", prev_img_ptr->image);
-    cv::waitKey(0);
+    if (show_tracking_results) {
+      imshow("Tracking Results", prev_img_ptr->image);
+      cv::waitKey(10);
+    }
     return false;
   }
 }
