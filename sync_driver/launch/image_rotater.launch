@@ -1,0 +1,21 @@
+<launch>
+	<arg name="rotflag" default="3"/>
+	<node pkg="cam_imu_sync" name="image_rotater" type="image_rotater_node"
+		output="screen" ns="/stereo/left">
+		<remap from="~image_raw" to="image_raw"/>
+		<remap from="~image_rotated" to="image_rotated"/>
+		<param name="rotflag" type="int" value="$(arg rotflag)"/>
+	</node>
+	<node pkg="cam_imu_sync" name="image_rotater" type="image_rotater_node"
+		output="screen" ns="/stereo/right">
+		<remap from="~image_raw" to="image_raw"/>
+		<remap from="~image_rotated" to="image_rotated"/>
+		<param name="rotflag" type="int" value="$(arg rotflag)"/>
+	</node>
+
+	<node pkg="stereo_image_proc" name="stereo_image_proc" type="stereo_image_proc"
+		ns="/stereo">
+		<remap from="left/image_raw" to="left/image_rotated"/>
+		<remap from="right/image_raw" to="right/image_rotated"/>
+	</node>
+</launch>

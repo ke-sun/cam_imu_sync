@@ -16,17 +16,18 @@
  */
 
 #include <ros/ros.h>
-#include <cam_imu_sync/CamImuSynchronizer.h>
+#include <sync_driver/Chameleon3ImuSynchronizer.h>
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "camera_imu_sync");
-  ros::NodeHandle nh("~");
+  ros::NodeHandle pnh("~");
 
   // New instance of the IMU
-  cam_imu_sync::CamImuSynchronizer sync_driver(nh);
-  if (!sync_driver.initialize()) return -1;
+  // cam_imu_sync::Bluefox2ImuSynchronizer sync_driver(pnh, 2);
+  cam_imu_sync::Chameleon3ImuSynchronizer sync_driver(pnh, 1);
 
   // Start the driver
+  sync_driver.configure();
   sync_driver.start();
 
   ros::spin();

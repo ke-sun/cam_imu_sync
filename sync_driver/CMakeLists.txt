@@ -6,14 +6,17 @@ add_definitions(-std=c++0x)
 find_package(catkin REQUIRED COMPONENTS
   camera_base
   bluefox2
+  flea3
   imu_vn_100
   roscpp
+  sensor_msgs
+  cv_bridge
 )
 
 find_package(Boost REQUIRED)
 
 catkin_package(
-  INCLUDE_DIRS
+  INCLUDE_DIRS include
   LIBRARIES
   CATKIN_DEPENDS
   DEPENDS
@@ -30,21 +33,28 @@ link_directories(
   ${Boost_LIBRARY_DIRS}
 )
 
-add_library(sync_driver
-  src/CamImuSynchronizer.cpp
+add_library(sync_chameleon3
+  src/Chameleon3ImuSynchronizer.cpp
 )
-target_link_libraries(sync_driver
+target_link_libraries(sync_chameleon3
   ${catkin_LIBRARIES}
 )
-add_dependencies(sync_driver
+add_dependencies(sync_chameleon3
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
 )
 
-add_executable(sync_node
-  src/cam_imu_sync_node.cpp
+#add_library(sync_driver
+#  src/CamImuSynchronizer.cpp
+#)
+#target_link_libraries(sync_driver
+#  ${catkin_LIBRARIES}
+#)
+
+add_executable(sync_driver_node
+  src/sync_driver_node.cpp
 )
-target_link_libraries(sync_node
-  sync_driver
+target_link_libraries(sync_driver_node
+  sync_chameleon3
   ${catkin_LIBRARIES}
 )

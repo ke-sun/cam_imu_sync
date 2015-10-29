@@ -1,0 +1,64 @@
+<launch>
+
+    <!--############### Node Configurations ##################-->
+    <arg name="output" default="screen"/>
+    <arg name="sync_rate" default="20"/>
+
+    <!--############### IMU Configurations ###################-->
+    <!-- Connection -->
+    <arg name="port" default="/dev/ttyUSB0" />
+
+    <!-- Frame ID for messages -->
+    <arg name="imu_frame_id" default="imu"/>
+
+    <!-- Baudrate of serial comms (see manual for allowed values) -->
+    <arg name="baudrate" default="921600"/>
+
+    <!-- Data rate in Hz -->
+    <arg name="imu_rate" default="200"/>
+
+    <!-- Sync out settings -->
+    <arg name="enable_sync_out" default="true"/>
+    <arg name="sync_out_rate" default="$(arg sync_rate)"/>
+    <!-- The unit of pulse width is nano sec(ns) -->
+    <arg name="sync_out_pulse_width" default="100000"/>
+
+    <!-- Ros Topic settings -->
+    <arg name="enable_magnetic_field" default="true"/>
+    <arg name="enable_pressure" default="true"/>
+    <arg name="enable_temperature" default="true"/>
+
+    <!--############### Camera Configurations ###################-->
+    <!-- Common Interface -->
+    <arg name="frame_rate" default="$(arg sync_rate)"/>
+
+    <!-- Camera Settings -->
+    <arg name="cam0" default="15322735"/>
+    <arg name="cam1" default="15322733"/>
+
+    <!--############### Sync Node ###################-->
+    <node pkg="sync_driver" type="sync_driver_node" name="sync"
+    	output="$(arg output)">
+
+        <param name="port" type="string" value="$(arg port)" />
+        <param name="baudrate" type="int" value="$(arg baudrate)" />
+        <param name="frame_id" type="string" value="$(arg imu_frame_id)"/>
+        <param name="imu_rate" type="int" value="$(arg imu_rate)" />
+        <param name="enable_magnetic_field" type="bool" value="$(arg enable_magnetic_field)" />
+        <param name="enable_pressure" type="bool" value="$(arg enable_pressure)" />
+        <param name="enable_temperature" type="bool" value="$(arg enable_temperature)" />
+        <param name="enable_sync_out" type="bool" value="$(arg enable_sync_out)" />
+        <param name="sync_out_rate" type="int" value="$(arg sync_out_rate)" />
+        <param name="sync_out_pulse_width" type="int" value="$(arg sync_out_pulse_width)" />
+
+        <!-- maybe camera name should just be defaulted to nodehandle name -->
+        <param name="cam0/camera_name" type="string" value="pg_$(arg cam0)"/>
+        <param name="cam0/identifier" type="string" value="$(arg cam0)"/>
+
+        <!-- <param name="cam1/camera_name" type="string" value="cam1"/> -->
+        <!-- <param name="cam1/identifier" type="string" value="$(arg cam1)"/> -->
+
+        <param name="fps" type="double" value="$(arg frame_rate)"/>
+    </node>
+
+</launch>
