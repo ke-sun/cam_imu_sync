@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -152,46 +153,24 @@ bool loadParameters() {
   return true;
 }
 
-void medianFilter() {
-  // The window of the median filter is hard-coded
-  // to be 5.
-  for (int i = 2; i < cam_imu.size()-2; ++i) {
-    std::vector<double> med_x_candidate(3);
-    std::vector<double> med_y_candidate(3);
-    std::vector<double> med_z_candidate(3);
-
-    med_x_candidate[0] = std::min(
-        cam_ang_vel[i-2].data(0), cam_ang_vel[i-1].data(0));
-    med_y_candidate[0] = std::min(
-        cam_ang_vel[i-2].data(1), cam_ang_vel[i-1].data(1));
-    med_z_candidate[0] = std::min(
-        cam_ang_vel[i-2].data(2), cam_ang_vel[i-1].data(2));
-
-    med_x_candidate[1] = std::min(
-        cam_ang_vel[i].data(0), cam_ang_vel[i+1].data(0));
-    med_y_candidate[1] = std::min(
-        cam_ang_vel[i].data(1), cam_ang_vel[i+1].data(1));
-    med_z_candidate[1] = std::min(
-        cam_ang_vel[i].data(2), cam_ang_vel[i+1].data(2));
-
-    med_x_candidate[2] = cam_ang_vel[i+2].data(0);
-    med_y_candidate[2] = cam_ang_vel[i+2].data(1);
-    med_z_candidate[2] = cam_ang_vel[i+2].data(2);
-
-    cam_ang_vel[i].data(0) = med_x_candidate[0];
-    cam_ang_vel[i].data(1) = med_y_candidate[0];
-    cam_ang_vel[i].data(2) = med_z_candidate[0];
-
-    for (int j = 1; j < 3; ++j) {
-      if (cam_ang_vel[i].data(0) > med_x_candidate[j])
-        cam_ang_vel[i].data(0) = med_x_candidate[j];
-      if (cam_ang_vel[i].data(1) > med_y_candidate[j])
-        cam_ang_vel[i].data(1) = med_y_candidate[j];
-      if (cam_ang_vel[i].data(2) > med_z_candidate[j])
-        cam_ang_vel[i].data(2) = med_z_candidate[j];
+void outlierRejection() {
+  for (int i = 0; i < cam_ang_vel.size()-1; ++i) {
+    int match_index = -1;
+    // Find the corresponding interval within the IMU data
+    // sequence for the current cam angular velocity
+    for (int j = 0; j < imu_ang_vel.size(); ++j) {
+      if (imu_ang_vel[j].time > cam_ang_vel[i].time) {
+        match_index = j;
+        break;
+      }
     }
+
+    if (match_index == -1)
+      match_index = imu_ang_vel.size()-1;
+
+    if ((cam_ang_vel[i].data-imu_ang_vel[match_index].data).squaredNorm() > 1.0)
+      cam_ang_vel[i].data = imu_ang_vel[match_index].data;
   }
-  // TODO: Take care of the first two and last two samples
   return;
 }
 
@@ -231,10 +210,11 @@ void computeResidual(const double& time_shift,
   // Compute the residual at each time instance
   // where angular velocity from camera is avaiable
   for (int i = 0; i < cam_ang_vel.size(); ++i) {
+
     int match_index = -1;
     // Find the corresponding interval within the IMU data
     // sequence for the current cam angular velocity
-    for (int j = 0; j < imu_imu.size(); ++i) {
+    for (int j = 0; j < imu_ang_vel.size(); ++j) {
       if (imu_ang_vel[j].time > cam_ang_vel[i].time+time_shift) {
         match_index = j;
         break;
@@ -255,7 +235,6 @@ void computeResidual(const double& time_shift,
         (imu_ang_vel[match_index].data-
          imu_ang_vel[match_index-1].data)*
         (epsilon/interval);
-      residual.segment<3>(3*i) = intp_imu_ang_vel-cam_ang_vel[i].data;
     } else if (match_index == 0) {
       // Deal with the case when the data from camera
       // is before the first IMU data
@@ -266,7 +245,6 @@ void computeResidual(const double& time_shift,
       intp_imu_ang_vel = imu_ang_vel[0].data -
         (imu_ang_vel[1].data-imu_ang_vel[0].data)*
         (epsilon/interval);
-      residual.segment<3>(0) = intp_imu_ang_vel-cam_ang_vel[i].data;
     } else {
       // Deal with the case when the data from camera
       // is after the last IMU data
@@ -278,9 +256,10 @@ void computeResidual(const double& time_shift,
         (imu_ang_vel[imu_ang_vel.size()-1].data-
          imu_ang_vel[imu_ang_vel.size()-2].data)*
         (epsilon/interval);
-      residual.segment<3>(3*cam_ang_vel.size()-3) =
-        intp_imu_ang_vel-cam_ang_vel[i].data;
     }
+
+    residual.segment<3>(3*i) =
+      intp_imu_ang_vel-cam_ang_vel[i].data;
   }
   return;
 }
@@ -295,23 +274,27 @@ void computeTimeDelay() {
   double prev_error = 0;
   double curr_error = 0;
 
-  // Remove the outliers in the cam data
-  medianFilter();
-
+  // Compute the initial cost
   computeResidual(0.0, curr_residual);
   curr_error = curr_residual.squaredNorm();
   prev_residual = curr_residual;
   prev_error = curr_error;
+  ROS_INFO("Initial cost: %f", prev_error);
+  getchar();
 
   for (int outer_cntr = 0; outer_cntr < 50; ++outer_cntr) {
+    double time_shift = 0.0;
     computeJacobian(jacobian);
     // Try compute the shift in time
     for (int inner_cntr = 0; inner_cntr < 100; ++inner_cntr) {
       Eigen::VectorXd time_shift_vec = (jacobian.transpose()*prev_residual) /
         (jacobian.squaredNorm()*(1.0+damping));
-      double time_shift = time_shift_vec(0);
+      time_shift = -time_shift_vec(0);
+      ROS_INFO("Current step: %f", time_shift);
       computeResidual(time_shift, curr_residual);
       curr_error = curr_residual.squaredNorm();
+      ROS_INFO("Damping factor: %f", damping);
+      ROS_INFO("Current cost: %f\n", curr_error);
       // Check the current residual
       if (curr_error >= prev_error) {
         damping *= 5.0;
@@ -325,6 +308,11 @@ void computeTimeDelay() {
         }
         break;
       }
+    }
+
+    // Stop the optimization if the update is small
+    if (std::abs(time_shift) < 1e-6) {
+      break;
     }
   }
 
@@ -354,7 +342,7 @@ void showImgs() {
 
   // Show the drawing results
   cv::imshow("Tracking Results", drawing_pad);
-  cv::waitKey(10);
+  cv::waitKey(5);
   return;
 }
 
@@ -499,10 +487,18 @@ int main(int argc, char **argv) {
   // Close the bag for reading
   read_bag.close();
 
+  // Filter the outliers
+  outlierRejection();
+
   // Compute the time delay
+  ROS_INFO("Compute time shift between CAM and IMU msgs.");
   computeTimeDelay();
 
-  // Write the results to a new bagfile
+  //for (int i = 0; i < cam_imu.size(); ++i) {
+  //  tf::vectorEigenToMsg(cam_ang_vel[i].data, cam_imu[i].angular_velocity);
+  //}
+
+  //// Write the results to a new bagfile
   //ROS_INFO("Write results into a new bagfile.");
   //rosbag::Bag write_bag(write_bagname, rosbag::bagmode::Write);
   //for (int i = 0; i < imu_imu.size(); ++i) {
