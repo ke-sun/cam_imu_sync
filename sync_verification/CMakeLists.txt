@@ -1,13 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(cam_imu_sync)
+project(sync_verification)
 
 add_definitions(-std=c++0x)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 find_package(catkin REQUIRED COMPONENTS
-  camera_base
-  bluefox2
-  imu_vn_100
   roscpp
   rosbag
   cv_bridge
@@ -23,7 +20,7 @@ find_package(Eigen3 REQUIRED)
 find_package(OpenCV 2.4.10 REQUIRED)
 
 catkin_package(
-  INCLUDE_DIRS
+  INCLUDE_DIRS include
   LIBRARIES
   CATKIN_DEPENDS
   DEPENDS
@@ -41,30 +38,24 @@ link_directories(
   ${Boost_LIBRARY_DIRS}
 )
 
-add_library(cam_imu_sync
-  src/CamImuSynchronizer.cpp
+add_library(sync_verifier
+  src/SyncVerifier.cpp
 )
-target_link_libraries(cam_imu_sync
+target_link_libraries(sync_verifier
   ${catkin_LIBRARIES}
+  opencv_core
+  opencv_highgui
 )
-add_dependencies(cam_imu_sync
+add_dependencies(sync_verifier
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
 )
 
-add_executable(cam_imu_sync_node
-  src/cam_imu_sync_node.cpp
-)
-target_link_libraries(cam_imu_sync_node
-  cam_imu_sync
-  ${catkin_LIBRARIES}
-)
 
-add_executable(sync_test_node
-  src/sync_verification.cpp
+add_executable(sync_verify_node
+  src/sync_verify_node.cpp
 )
-target_link_libraries(sync_test_node
+target_link_libraries(sync_verify_node
   ${catkin_LIBRARIES}
-  opencv_core
-  opencv_highgui
+  sync_verifier
 )

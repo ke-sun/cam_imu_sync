@@ -58,7 +58,7 @@
     <arg name="boost" default="false"/>
 
     <!--############### Sync Node ###################-->
-    <node pkg="cam_imu_sync" type="cam_imu_sync_node" name="$(arg node_name)" output="$(arg output)">
+    <node pkg="sync_driver" type="sync_node" name="$(arg node_name)" output="$(arg output)">
 
         <param name="port" type="string" value="$(arg port)" />
         <param name="baudrate" type="int" value="$(arg baudrate)" />

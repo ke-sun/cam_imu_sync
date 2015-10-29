@@ -1,14 +1,17 @@
 <launch>
 
-  <node pkg="cam_imu_sync" type="sync_test_node" name="sync_test" output="screen">
+  <arg name="input_bag" default="/home/ke/Dataset/calibration/calibration_2015-10-22-12-57-09"/>
+
+  <node pkg="sync_verification" type="sync_verify_node" name="sync_verify" output="screen">
 
       <!-- General parameters  -->
-      <param name="input_bagfile_name" type="string" value="/home/ke/Dataset/calibration/calibration_2015-10-22-12-57-09.bag" />
-      <param name="output_bagfile_name" type="string" value="/home/ke/Dataset/calibration/calibration_2015-10-22-16-59-58_test.bag" />
+      <param name="input_bagfile_name" type="string" value="$(arg input_bag).bag" />
+      <param name="output_bagfile_name" type="string" value="$(arg input_bag)_verify.bag" />
       <param name="input_imu_topic" type="string" value="/sync/imu" />
       <param name="input_img_topic" type="string" value="/sync/left/image_rect" />
-      <param name="output_imu_angular_vel_topic" type="string" value="/sync/imu" />
-      <param name="output_cam_angular_vel_topic" type="string" value="/sync/cam" />
+      <param name="output_imu_ang_vel_topic" type="string" value="/sync/imu" />
+      <param name="output_cam_ang_vel_topic" type="string" value="/sync/cam" />
+      <param name="output_aligned_cam_ang_vel_topic" type="string" value="/sync/shifted_cam" />
 
       <!-- Calibration parameters  -->
       <param name="ransac_threshold" type="double" value="2" />
