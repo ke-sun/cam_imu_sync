@@ -24,8 +24,7 @@ int main(int argc, char** argv) {
 
   // New instance of the IMU
   try {
-    cam_imu_sync::CamImuSynchronizer synchronizer(pnh, 2);
-    //    synchronizer.start();
+    cam_imu_sync::CamImuSynchronizer synchronizer(pnh);
     ros::spin();
   } catch (const std::exception& e) {
     ROS_ERROR("%s: %s", pnh.getNamespace().c_str(), e.what());

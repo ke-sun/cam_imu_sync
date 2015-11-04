@@ -22,24 +22,29 @@
 
 namespace cam_imu_sync {
 
-CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& pnh,
-                                       int num_cameras)
-    : pnh_(pnh) {
+CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& pnh)
+    : pnh_(pnh), cam_cfg_server_(pnh_) {
   // Initialize imu
   imu_ = boost::make_shared<Imu>(pnh);
   if (!imu_->initialize()) {
     throw std::runtime_error("CamImuSynchronizer failed to initialize imu");
   }
+  imu_->enableIMUStream(true);
 
   // Initialize cameras
-  ROS_ASSERT_MSG(num_cameras > 0, "Number of cameras must be more than 0");
+  int num_cameras = 0;
+  if (!pnh_.getParam("num_cameras", num_cameras)) {
+    throw std::runtime_error("Number of cameras is not specified");
+  }
+
+  ROS_INFO("Initializing %d cameras.", num_cameras);
   for (int i = 0; i < num_cameras; ++i) {
     const auto prefix = "cam" + std::to_string(i);
-    cameras_.push_back(boost::make_shared<Cam>(pnh, prefix));
+    cameras_.push_back(boost::make_shared<Cam>(pnh_, prefix));
   }
 
   // Initialize reconfigure server
-  cfg_server_.setCallback(
+  cam_cfg_server_.setCallback(
       boost::bind(&CamImuSynchronizer::configure, this, _1, _2));
 }
 
@@ -86,6 +91,7 @@ void CamImuSynchronizer::configureCameras(Config& config) {
 }
 
 void CamImuSynchronizer::startPoll() {
+  ROS_INFO("Start polling");
   is_polling_ = true;
   img_poll_thread_ =
       boost::make_shared<boost::thread>(&CamImuSynchronizer::pollImages, this);
@@ -95,6 +101,7 @@ void CamImuSynchronizer::stopPoll() {
   if (!is_polling_) return;
   is_polling_ = false;
   img_poll_thread_->join();
+  ROS_INFO("Stop polling");
 }
 
 }  // namespace cam_imu_sync

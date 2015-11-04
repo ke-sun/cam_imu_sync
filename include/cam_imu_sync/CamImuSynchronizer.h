@@ -43,7 +43,7 @@ class CamImuSynchronizer {
   using CamPtr = boost::shared_ptr<Cam>;
   using Config = flea3::Flea3DynConfig;
 
-  CamImuSynchronizer(const ros::NodeHandle& pnh, int num_cameras);
+  CamImuSynchronizer(const ros::NodeHandle& pnh);
   ~CamImuSynchronizer() = default;
   CamImuSynchronizer(const CamImuSynchronizer&) = delete;
   CamImuSynchronizer& operator=(const CamImuSynchronizer&) = delete;
@@ -59,7 +59,7 @@ class CamImuSynchronizer {
   ImuPtr imu_;
   std::vector<CamPtr> cameras_;
   boost::shared_ptr<boost::thread> img_poll_thread_;
-  dynamic_reconfigure::Server<flea3::Flea3DynConfig> cfg_server_;
+  dynamic_reconfigure::Server<flea3::Flea3DynConfig> cam_cfg_server_;
 
   void pollImages();
   void startPoll();
