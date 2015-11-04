@@ -23,9 +23,9 @@
 namespace cam_imu_sync {
 
 CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& pnh)
-    : pnh_(pnh), cam_cfg_server_(pnh_) {
+    : pnh_(pnh), imu_nh_(pnh, "imu"), cam_cfg_server_(pnh_) {
   // Initialize imu
-  imu_ = boost::make_shared<Imu>(pnh);
+  imu_ = boost::make_shared<Imu>(imu_nh_);
   if (!imu_->initialize()) {
     throw std::runtime_error("CamImuSynchronizer failed to initialize imu");
   }

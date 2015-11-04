@@ -55,7 +55,7 @@ class CamImuSynchronizer {
 
  private:
   bool is_polling_{false};
-  ros::NodeHandle pnh_;
+  ros::NodeHandle pnh_, imu_nh_;
   ImuPtr imu_;
   std::vector<CamPtr> cameras_;
   boost::shared_ptr<boost::thread> img_poll_thread_;

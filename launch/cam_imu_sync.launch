@@ -1,7 +1,7 @@
 <launch>
     <!--############### Node Configurations ##################-->
     <arg name="output" default="screen"/>
-    <arg name="sync_rate" default="10"/>
+    <arg name="sync_rate" default="20"/>
 
     <!--############### IMU Configurations ###################-->
     <!-- Connection -->
@@ -14,7 +14,7 @@
     <arg name="baudrate" default="921600"/>
 
     <!-- Data rate in Hz -->
-    <arg name="imu_rate" default="100"/>
+    <arg name="imu_rate" default="200"/>
 
     <!-- Sync out settings -->
     <arg name="enable_sync_out" default="true"/>
@@ -33,11 +33,9 @@
     <arg name="cam0" default="15322735"/>
     <arg name="cam1" default="15322733"/>
 
-    <!-- Sync Node -->
-    <node pkg="cam_imu_sync" type="cam_imu_sync_node" name="sync" output="$(arg output)">
+    <group ns="sync/imu">
         <param name="port" type="string" value="$(arg port)" />
         <param name="baudrate" type="int" value="$(arg baudrate)" />
-        <param name="frame_id" type="string" value="$(arg imu_frame_id)"/>
         <param name="imu_rate" type="int" value="$(arg imu_rate)" />
         <param name="enable_magnetic_field" type="bool" value="$(arg enable_magnetic_field)" />
         <param name="enable_pressure" type="bool" value="$(arg enable_pressure)" />
@@ -45,15 +43,22 @@
         <param name="enable_sync_out" type="bool" value="$(arg enable_sync_out)" />
         <param name="sync_out_rate" type="int" value="$(arg sync_out_rate)" />
         <param name="sync_out_pulse_width" type="int" value="$(arg sync_out_pulse_width)" />
+    </group>
+
+    <!-- Sync Node -->
+    <node pkg="cam_imu_sync" type="cam_imu_sync_node" name="sync" output="$(arg output)">
 
         <param name="num_cameras" type="int" value="2"/>
         <param name="fps" type="double" value="$(arg frame_rate)"/>
 
         <param name="cam0/identifier" type="string" value="$(arg cam0)"/>
-        <param name="cam0/camera_name" type="string" value="cam0"/>
+        <param name="cam0/camera_name" type="string" value="pg_$(arg cam0)"/>
+        <param name="cam0/calib_url" type="string" value="file://${ROS_HOME}/camera_info/pg_$(arg cam0).yaml"/>
 
-        <param name="cam1/camera_name" type="string" value="cam1"/>
+        <param name="cam1/camera_name" type="string" value="pg_$(arg cam1)"/>
         <param name="cam1/identifier" type="string" value="$(arg cam1)"/>
+        <param name="cam1/calib_url" type="string" value="file://${ROS_HOME}/camera_info/pg_$(arg cam1).yaml"/>
+
 
         <param name="auto_shutter" type="bool" value="false"/>
         <param name="shutter_ms" type="double" value="4"/>
