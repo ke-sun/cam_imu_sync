@@ -86,12 +86,14 @@ void CamImuSynchronizer::pollImages() {
 
 void CamImuSynchronizer::configureCameras(Config& config) {
   for (auto& cam : cameras_) {
+    cam->Stop();
     cam->camera().Configure(config);
+    cam->set_fps(config.fps);
+    cam->Start();
   }
 }
 
 void CamImuSynchronizer::startPoll() {
-  ROS_INFO("Start polling");
   is_polling_ = true;
   img_poll_thread_ =
       boost::make_shared<boost::thread>(&CamImuSynchronizer::pollImages, this);
@@ -101,7 +103,6 @@ void CamImuSynchronizer::stopPoll() {
   if (!is_polling_) return;
   is_polling_ = false;
   img_poll_thread_->join();
-  ROS_INFO("Stop polling");
 }
 
 }  // namespace cam_imu_sync
