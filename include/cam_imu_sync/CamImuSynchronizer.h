@@ -15,67 +15,58 @@
  * limitations under the License.
  */
 
-#ifndef CAM_IMU_SYNC
-#define CAM_IMU_SYNC
-
-#include <vector>
+#ifndef CAMIMUSYNC_CAMIMUSYNCHRONIZER_H
+#define CAMIMUSYNC_CAMIMUSYNCHRONIZER_H
 
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <ros/ros.h>
-#include <imu_vn_100/imu_ros_base.h>
-#include <bluefox2/bluefox2_ros.h>
+#include <dynamic_reconfigure/server.h>
+#include <flea3/Flea3DynConfig.h>
+
+namespace flea3 {
+class Flea3Ros;
+}  // namespace flea3
+
+namespace imu_vn_100 {
+class ImuRosBase;
+}  // namespace imu_vn_100
 
 namespace cam_imu_sync {
 
-/**
- * @brief CamImuSynchronizer
- *        The class is used for synchronize the time stamp for
- *        imu and cameras. Currently, it only supports imu VN100
- *        from VECTORNAV and cameras from BLUEFOX. The cameras
- *        are supposed to be externally triggered by the imu.
- * @author Ke Sun
- */
 class CamImuSynchronizer {
  public:
-  CamImuSynchronizer(const ros::NodeHandle& n);
-  ~CamImuSynchronizer() {}
+  using Imu = imu_vn_100::ImuRosBase;
+  using ImuPtr = boost::shared_ptr<Imu>;
+  using Cam = flea3::Flea3Ros;
+  using CamPtr = boost::shared_ptr<Cam>;
+  using Config = flea3::Flea3DynConfig;
+
+  CamImuSynchronizer(const ros::NodeHandle& pnh, int num_cameras);
+  ~CamImuSynchronizer() = default;
+  CamImuSynchronizer(const CamImuSynchronizer&) = delete;
+  CamImuSynchronizer& operator=(const CamImuSynchronizer&) = delete;
 
   /**
-   * @brief initialize Initialize IMU and CAM objects
-   * @return True If the driver is initialized successfully.
+   * @brief configure
    */
-  bool initialize();
-
-  /**
-   * @brief start Starts the driver(IMU and CAM(s))
-   */
-  void start();
+  void configure(Config& config, int level);
 
  private:
-  // Ros node
-  ros::NodeHandle nh;
+  bool is_polling_{false};
+  ros::NodeHandle pnh_;
+  ImuPtr imu_;
+  std::vector<CamPtr> cameras_;
+  boost::shared_ptr<boost::thread> img_poll_thread_;
+  dynamic_reconfigure::Server<flea3::Flea3DynConfig> cfg_server_;
 
-  // IMU object
-  imu_vn_100::ImuRosBase imu;
-
-  // Camera object(s)
-  bluefox2::Bluefox2Ros lcam;
-  bluefox2::Bluefox2Ros rcam;
-
-  // A seperate thread waiting for images
-  boost::shared_ptr<boost::thread> img_poll_thread_ptr;
-
-  // Poll image(s) from camera(s)
-  //    This function will be run on a seperate thread
-  //    avoid blocking the main function.
-  void pollImage();
-
-  // Disable copy and assign contructor
-  CamImuSynchronizer(const CamImuSynchronizer&);
-  CamImuSynchronizer& operator=(const CamImuSynchronizer&);
+  void pollImages();
+  void startPoll();
+  void stopPoll();
+  void configureCameras(Config& config);
 };
-}
 
-#endif
+}  // namespace cam_imu_sync
+
+#endif  // CAMIMUSYNC_CAMIMUSYNCHRONIZER_H

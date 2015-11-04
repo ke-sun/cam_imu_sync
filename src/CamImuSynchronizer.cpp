@@ -16,65 +16,85 @@
  */
 
 #include <cam_imu_sync/CamImuSynchronizer.h>
-#include <bluefox2/Bluefox2DynConfig.h>
+#include <flea3/Flea3DynConfig.h>
+#include <flea3/flea3_ros.h>
+#include <imu_vn_100/imu_ros_base.h>
 
 namespace cam_imu_sync {
 
-CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& n)
-    : nh(n), imu(n), lcam(n, "left"), rcam(n, "right")
-{
-  return;
-}
-
-bool CamImuSynchronizer::initialize() {
-  // Initialize IMU
-  if (!imu.initialize()) {
-    ROS_ERROR("Fail to initialize IMU.");
-    return false;
+CamImuSynchronizer::CamImuSynchronizer(const ros::NodeHandle& pnh,
+                                       int num_cameras)
+    : pnh_(pnh) {
+  // Initialize imu
+  imu_ = boost::make_shared<Imu>(pnh);
+  if (!imu_->initialize()) {
+    throw std::runtime_error("CamImuSynchronizer failed to initialize imu");
   }
+
   // Initialize cameras
-  int cam_expose_us = 5000;
-  nh.param<int>("expose_us", cam_expose_us, 5000);
-
-  bluefox2::Bluefox2DynConfig cam_config;
-  cam_config.aec = 0;
-  cam_config.expose_us = cam_expose_us;
-  cam_config.ctm = 3;
-  lcam.camera().Configure(cam_config);
-  lcam.set_fps(static_cast<int>(imu.getSyncRate()));
-  rcam.camera().Configure(cam_config);
-  rcam.set_fps(static_cast<int>(imu.getSyncRate()));
-
-  return true;
-}
-
-void CamImuSynchronizer::start() {
-  // Start the IMU streaming
-  imu.enableIMUStream(true);
-  // Start polling images from the camera(s)
-  img_poll_thread_ptr = boost::shared_ptr<boost::thread>(
-      new boost::thread(&CamImuSynchronizer::pollImage, this));
-  return;
-}
-
-void CamImuSynchronizer::pollImage() {
-  // TODO: continuously poll images and
-  //    assign the latest time stamp from
-  //    IMU to the image msgs
-  float sync_rate = imu.getSyncRate();
-  float sync_duration = 1.0/sync_rate;
-  ros::Rate r(static_cast<int>(sync_rate));
-  ros::Duration(1e-3).sleep();
-
-  while (ros::ok()) {
-    ros::Time new_time_stamp =
-      imu.getSyncTime() + ros::Duration(sync_duration);
-    lcam.RequestSingle();
-    rcam.RequestSingle();
-    lcam.PublishCamera(new_time_stamp);
-    rcam.PublishCamera(new_time_stamp);
-    r.sleep();
+  ROS_ASSERT_MSG(num_cameras > 0, "Number of cameras must be more than 0");
+  for (int i = 0; i < num_cameras; ++i) {
+    const auto prefix = "cam" + std::to_string(i);
+    cameras_.push_back(boost::make_shared<Cam>(pnh, prefix));
   }
-  return;
+
+  // Initialize reconfigure server
+  cfg_server_.setCallback(
+      boost::bind(&CamImuSynchronizer::configure, this, _1, _2));
 }
+
+void CamImuSynchronizer::configure(Config& config, int level) {
+  if (level < 0) {
+    ROS_INFO("%s: %s", pnh_.getNamespace().c_str(),
+             "Initializing reconfigure server");
+  }
+
+  if (is_polling_) stopPoll();
+  // Configure cameras
+  configureCameras(config);
+  startPoll();
 }
+
+void CamImuSynchronizer::pollImages() {
+  // Before the polling loop, we make sure that all camera buffers are cleared
+  for (auto& cam : cameras_) {
+    auto image_msg = boost::make_shared<sensor_msgs::Image>();
+    cam->Grab(image_msg);
+  }
+
+  while (is_polling_ && ros::ok()) {
+    ros::Time time;
+    for (size_t i = 0; i < cameras_.size(); ++i) {
+      auto image_msg = boost::make_shared<sensor_msgs::Image>();
+      cameras_[i]->Grab(image_msg);
+      // After the first camera finished grabing, we get the time stamp from
+      // imu. Because Grab blocks until the buffer is retrieved, this time stamp
+      // is guaranteed to correspond to the imu that triggered this image
+      if (i == 0) time = imu_->getSyncTime();
+      image_msg->header.stamp = time;
+      // Publish takes less then 0.1ms to finish, so it is safe to put it here
+      // in the loop
+      cameras_[i]->Publish(image_msg);
+    }
+  }
+}
+
+void CamImuSynchronizer::configureCameras(Config& config) {
+  for (auto& cam : cameras_) {
+    cam->camera().Configure(config);
+  }
+}
+
+void CamImuSynchronizer::startPoll() {
+  is_polling_ = true;
+  img_poll_thread_ =
+      boost::make_shared<boost::thread>(&CamImuSynchronizer::pollImages, this);
+}
+
+void CamImuSynchronizer::stopPoll() {
+  if (!is_polling_) return;
+  is_polling_ = false;
+  img_poll_thread_->join();
+}
+
+}  // namespace cam_imu_sync

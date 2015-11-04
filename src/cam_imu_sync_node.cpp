@@ -18,18 +18,16 @@
 #include <ros/ros.h>
 #include <cam_imu_sync/CamImuSynchronizer.h>
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   ros::init(argc, argv, "camera_imu_sync");
-  ros::NodeHandle nh("~");
+  ros::NodeHandle pnh("~");
 
   // New instance of the IMU
-  cam_imu_sync::CamImuSynchronizer sync_driver(nh);
-  if (!sync_driver.initialize()) return -1;
-
-  // Start the driver
-  sync_driver.start();
-
-  ros::spin();
-
-  return 0;
+  try {
+    cam_imu_sync::CamImuSynchronizer synchronizer(pnh, 2);
+    //    synchronizer.start();
+    ros::spin();
+  } catch (const std::exception& e) {
+    ROS_ERROR("%s: %s", pnh.getNamespace().c_str(), e.what());
+  }
 }
