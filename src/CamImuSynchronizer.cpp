@@ -85,6 +85,7 @@ void CamImuSynchronizer::pollImages() {
 }
 
 void CamImuSynchronizer::configureCameras(Config& config) {
+  config.fps = imu_->getSyncRate();
   for (auto& cam : cameras_) {
     cam->Stop();
     cam->camera().Configure(config);
