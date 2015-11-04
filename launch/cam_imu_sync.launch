@@ -46,20 +46,20 @@
         <param name="sync_out_rate" type="int" value="$(arg sync_out_rate)" />
         <param name="sync_out_pulse_width" type="int" value="$(arg sync_out_pulse_width)" />
 
-            <param name="num_cameras" type="int" value="2"/>
-            <param name="fps" type="double" value="$(arg frame_rate)"/>
+        <param name="num_cameras" type="int" value="2"/>
+        <param name="fps" type="double" value="$(arg frame_rate)"/>
 
-            <param name="cam0/identifier" type="string" value="$(arg cam0)"/>
-            <param name="cam0/camera_name" type="string" value="cam0"/>
+        <param name="cam0/identifier" type="string" value="$(arg cam0)"/>
+        <param name="cam0/camera_name" type="string" value="cam0"/>
 
-            <param name="cam1/camera_name" type="string" value="cam1"/>
-            <param name="cam1/identifier" type="string" value="$(arg cam1)"/>
+        <param name="cam1/camera_name" type="string" value="cam1"/>
+        <param name="cam1/identifier" type="string" value="$(arg cam1)"/>
 
-            <param name="auto_shutter" type="bool" value="false"/>
-            <param name="shutter_ms" type="double" value="4"/>
-            <param name="auto_gain" type="bool" value="false"/>
-            <param name="gain_db" type="double" value="4"/>
-            <param name="trigger_source" type="int" value="2"/>
-            <param name="trigger_polarity" type="int" value="1"/>
+        <param name="auto_shutter" type="bool" value="false"/>
+        <param name="shutter_ms" type="double" value="4"/>
+        <param name="auto_gain" type="bool" value="false"/>
+        <param name="gain_db" type="double" value="4"/>
+        <param name="trigger_source" type="int" value="2"/>
+        <param name="trigger_polarity" type="int" value="1"/>
     </node>
 </launch>
