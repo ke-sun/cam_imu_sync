@@ -1,12 +1,12 @@
 <launch>
     <!--############### Node Configurations ##################-->
     <arg name="output" default="screen"/>
-    <arg name="sync_rate" default="20"/>
+    <arg name="sync_rate" default="40"/>
 
     <!--############### IMU Configurations ###################-->
     <!-- Connection -->
-    <arg name="port" default="/dev/ttyUSB0" />
-
+    <arg name="port" default="/dev/serial/by-id/usb-FTDI_TTL232R-3V3_FT8XVQ31-if00-port0"/>
+    
     <!-- Frame ID for messages -->
     <arg name="imu_frame_id" default="imu"/>
 
@@ -61,9 +61,9 @@
 
 
         <param name="auto_shutter" type="bool" value="false"/>
-        <param name="shutter_ms" type="double" value="4"/>
+        <param name="shutter_ms" type="double" value="5"/>
         <param name="auto_gain" type="bool" value="false"/>
-        <param name="gain_db" type="double" value="4"/>
+        <param name="gain_db" type="double" value="5"/>
         <param name="trigger_source" type="int" value="2"/>
         <param name="trigger_polarity" type="int" value="1"/>
     </node>
