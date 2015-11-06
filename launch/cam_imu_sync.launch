@@ -2,6 +2,7 @@
     <!--############### Node Configurations ##################-->
     <arg name="output" default="screen"/>
     <arg name="sync_rate" default="40"/>
+    <arg name="num_cameras" default="2"/>
 
     <!--############### IMU Configurations ###################-->
     <!-- Connection -->
@@ -24,8 +25,8 @@
 
     <!-- Ros Topic settings -->
     <arg name="enable_magnetic_field" default="false"/>
-    <arg name="enable_pressure" default="false"/>
-    <arg name="enable_temperature" default="false"/>
+    <arg name="enable_pressure" default="true"/>
+    <arg name="enable_temperature" default="true"/>
 
     <!-- Camera Configurations -->
     <!-- Common Interface -->
@@ -48,7 +49,7 @@
     <!-- Sync Node -->
     <node pkg="cam_imu_sync" type="cam_imu_sync_node" name="sync" output="$(arg output)">
 
-        <param name="num_cameras" type="int" value="2"/>
+        <param name="num_cameras" type="int" value="$(arg num_cameras)"/>
         <param name="fps" type="double" value="$(arg frame_rate)"/>
 
         <param name="cam0/identifier" type="string" value="$(arg cam0)"/>
@@ -61,9 +62,9 @@
 
 
         <param name="auto_shutter" type="bool" value="false"/>
-        <param name="shutter_ms" type="double" value="5"/>
+        <param name="shutter_ms" type="double" value="6"/>
         <param name="auto_gain" type="bool" value="false"/>
-        <param name="gain_db" type="double" value="5"/>
+        <param name="gain_db" type="double" value="0"/>
         <param name="trigger_source" type="int" value="2"/>
         <param name="trigger_polarity" type="int" value="1"/>
     </node>
